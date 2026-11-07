@@ -2,18 +2,13 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 from scipy.stats import poisson
-import urllib.request
-import json
 
-# إعدادات الصفحة للهواتف المحمولة
 st.set_page_config(
-    page_title="PRO QUANT ENGINE - All Matches",
+    page_title="PRO QUANT - Live Custom Engine",
     page_icon="⚽",
-    layout="centered",
-    initial_sidebar_state="collapsed"
+    layout="centered"
 )
 
-# --- NATIVE MATH ENGINE ---
 def dixon_coles_adjustment(x, y, lambda_x, mu_y, rho):
     if x == 0 and y == 0:
         return 1 - (lambda_x * mu_y * rho)
@@ -46,72 +41,58 @@ def calculate_match_engine(att_home, def_away, att_away, def_home, avg_home=1.50
     prob_away = np.sum(np.triu(matrix, 1))
     
     return {
-        "xG_Home": lambda_x,
-        "xG_Away": mu_y,
-        "prob_home": prob_home,
-        "prob_draw": prob_draw,
-        "prob_away": prob_away,
+        "xG_Home": lambda_x, "xG_Away": mu_y,
+        "prob_home": prob_home, "prob_draw": prob_draw, "prob_away": prob_away,
         "fair_home": 1 / prob_home if prob_home > 0 else 0,
         "fair_draw": 1 / prob_draw if prob_draw > 0 else 0,
         "fair_away": 1 / prob_away if prob_away > 0 else 0
     }
 
-# --- FETCH ALL LIVE/UPCOMING MATCHES ---
-@st.cache_data(ttl=3600)
-def get_live_global_matches():
-    # جدول موسع ومحدث يضم مباريات واسعة النطاق من مختلف الدوريات العالمية والمحلية
-    matches_data = [
-        {"Match": "Real Madrid vs Barcelona (La Liga)", "Home": "Real Madrid", "Away": "Barcelona", "Att_H": 1.55, "Def_H": 0.75, "Att_A": 1.50, "Def_A": 0.80, "Market_1": 2.05, "Market_X": 3.60, "Market_2": 3.40},
-        {"Match": "Arsenal vs Chelsea (Premier League)", "Home": "Arsenal", "Away": "Chelsea", "Att_H": 1.45, "Def_H": 0.70, "Att_A": 1.30, "Def_A": 0.85, "Market_1": 1.85, "Market_X": 3.70, "Market_2": 4.10},
-        {"Match": "Manchester City vs Liverpool (Premier League)", "Home": "Manchester City", "Away": "Liverpool", "Att_H": 1.65, "Def_H": 0.70, "Att_A": 1.55, "Def_A": 0.75, "Market_1": 2.10, "Market_X": 3.50, "Market_2": 3.20},
-        {"Match": "Bayern Munich vs Dortmund (Bundesliga)", "Home": "Bayern Munich", "Away": "Dortmund", "Att_H": 1.70, "Def_H": 0.80, "Att_A": 1.45, "Def_A": 0.90, "Market_1": 1.55, "Market_X": 4.20, "Market_2": 5.50},
-        {"Match": "AC Milan vs Inter Milan (Serie A)", "Home": "AC Milan", "Away": "Inter Milan", "Att_H": 1.35, "Def_H": 0.85, "Att_A": 1.40, "Def_A": 0.75, "Market_1": 2.80, "Market_X": 3.30, "Market_2": 2.50},
-        {"Match": "Monagas SC vs Deportivo Táchira (Venezuela)", "Home": "Monagas SC", "Away": "Deportivo Táchira", "Att_H": 0.85, "Def_H": 1.15, "Att_A": 1.45, "Def_A": 0.75, "Market_1": 4.70, "Market_X": 3.60, "Market_2": 1.52}
-    ]
-    return pd.DataFrame(matches_data)
+st.title("🛡️ PRO QUANT (الإدخال الفوري المباشر)")
+st.caption("أدخل أي مباراة من تطبيق المراهنات الخاص بك وحللها فوراً")
 
-# --- STREAMLIT UI ---
-st.title("🛡️ PRO QUANT (جميع المباريات)")
-st.caption("محرك التحليل الرياضي الشامل - جلب تلقائي")
+with st.form("match_form"):
+    st.subheader("📝 بيانات المباراة الحقيقية")
+    col1, col2 = st.columns(2)
+    with col1:
+        home_team = st.text_input("اسم المستضيف (Home)", "Monagas SC")
+        home_att = st.number_input("هجوم المستضيف", value=0.85, step=0.05)
+        home_def = st.number_input("دفاع المستضيف", value=1.15, step=0.05)
+    with col2:
+        away_team = st.text_input("اسم الضيف (Away)", "Deportivo Táchira")
+        away_att = st.number_input("هجوم الضيف", value=1.45, step=0.05)
+        away_def = st.number_input("دفاع الضيف", value=0.75, step=0.05)
+        
+    st.subheader("💰 أسعار السوق الحالية (Odds)")
+    m_col1, m_col2, m_col3 = st.columns(3)
+    with m_col1:
+        mkt_h = st.number_input("سعر (1)", value=4.70, step=0.01)
+    with m_col2:
+        mkt_d = st.number_input("سعر التعادل (X)", value=3.60, step=0.01)
+    with m_col3:
+        mkt_a = st.number_input("سعر (2)", value=1.52, step=0.01)
+        
+    submitted = st.form_submit_button("🚀 تشغيل التحليل الفوري للمباراة", use_container_width=True)
 
-df_matches = get_live_global_matches()
-
-st.subheader("🌐 اختر المباراة من قائمة المباريات المتاحة")
-selected_match = st.selectbox("قائمة المباريات العالمية:", df_matches['Match'].tolist())
-
-match_row = df_matches[df_matches['Match'] == selected_match].iloc[0]
-h_team = match_row['Home']
-a_team = match_row['Away']
-att_h = float(match_row['Att_H'])
-def_h = float(match_row['Def_H'])
-att_a = float(match_row['Att_A'])
-def_a = float(match_row['Def_A'])
-mkt_h = float(match_row['Market_1'])
-mkt_d = float(match_row['Market_X'])
-mkt_a = float(match_row['Market_2'])
-
-st.info(f"📌 **المباراة:** {h_team} 🏠 ضد {a_team} ✈️\n\n💰 **أسعار السوق:** (1): `{mkt_h}` | (X): `{mkt_d}` | (2): `{mkt_a}`")
-
-if st.button("🚀 تشغيل التحليل الشامل", use_container_width=True):
-    res = calculate_match_engine(att_h, def_a, att_a, def_h)
+if submitted:
+    res = calculate_match_engine(home_att, away_def, away_att, home_def)
     
-    st.markdown("### 📈 الأهداف المتوقعة (xG)")
-    st.success(f"xG {h_team}: **{res['xG_Home']:.2f}** | xG {a_team}: **{res['xG_Away']:.2f}**")
-
-    st.markdown("### ⚖️ السعر العادل مقابل السوق (Edge Analysis)")
+    st.markdown("---")
+    st.markdown(f"### 📊 نتائج تحليل: {home_team} vs {away_team}")
+    st.success(f"xG {home_team}: **{res['xG_Home']:.2f}** | xG {away_team}: **{res['xG_Away']:.2f}**")
     
     edge_h = (res['prob_home'] * mkt_h) - 1
     edge_d = (res['prob_draw'] * mkt_d) - 1
     edge_a = (res['prob_away'] * mkt_a) - 1
     
-    st.write(f"**فوز {h_team} (1):** عادل `{res['fair_home']:.2f}` | السوق `{mkt_h:.2f}` | الهامش: **{edge_h*100:+.1f}%** {'🟢' if edge_h > 0 else '🔴'}")
+    st.write(f"**فوز {home_team} (1):** عادل `{res['fair_home']:.2f}` | السوق `{mkt_h:.2f}` | الهامش: **{edge_h*100:+.1f}%** {'🟢' if edge_h > 0 else '🔴'}")
     st.write(f"**التعادل (X):** عادل `{res['fair_draw']:.2f}` | السوق `{mkt_d:.2f}` | الهامش: **{edge_d*100:+.1f}%** {'🟢' if edge_d > 0 else '🔴'}")
-    st.write(f"**فوز {a_team} (2):** عادل `{res['fair_away']:.2f}` | السوق `{mkt_a:.2f}` | الهامش: **{edge_a*100:+.1f}%** {'🟢' if edge_a > 0 else '🔴'}")
-
+    st.write(f"**فوز {away_team} (2):** عادل `{res['fair_away']:.2f}` | السوق `{mkt_a:.2f}` | الهامش: **{edge_a*100:+.1f}%** {'🟢' if edge_a > 0 else '🔴'}")
+    
     st.markdown("---")
     if edge_h > 0.05:
-        st.success(f"🟢 **توصية المحرك:** فرصة قيمة على فوز {h_team} (Value Bet)")
+        st.success(f"🟢 **توصية المحرك:** فرصة قيمة على فوز {home_team} (Value Bet)")
     elif edge_a > 0.05:
-        st.success(f"🟢 **توصية المحرك:** فرصة قيمة على فوز {a_team} (Value Bet)")
+        st.success(f"🟢 **توصية المحرك:** فرصة قيمة على فوز {away_team} (Value Bet)")
     else:
         st.warning("⚠️ **القرار: NO BET** - لا يوجد هامش ربح كافٍ يبرر المخاطرة.")

@@ -4,7 +4,7 @@ import pandas as pd
 from scipy.stats import poisson
 
 st.set_page_config(
-    page_title="PRO QUANT - Vision AI Engine",
+    page_title="PRO QUANT - Fast Vision Engine",
     page_icon="📸",
     layout="centered"
 )
@@ -48,45 +48,44 @@ def calculate_match_engine(att_home, def_away, att_away, def_home, avg_home=1.50
         "fair_away": 1 / prob_away if prob_away > 0 else 0
     }
 
-st.title("📸 PRO QUANT (ماسح الصور الذكي)")
-st.caption("ارفع لقطة الشاشة من تطبيق المراهنات وسيقوم المحرك بتحليلها")
+st.title("📸 PRO QUANT (التحليل السريع)")
+st.caption("ارفع الصورة لمشاهدة تفاصيلها وتحليلها فوراً")
 
-# قسم رفع الصورة
-uploaded_image = st.file_uploader("اختر أو صور لقطة الشاشة من هاتفك", type=["jpg", "jpeg", "png"])
+# رفع الصورة
+uploaded_image = st.file_uploader("اختر لقطة الشاشة للمباراة", type=["jpg", "jpeg", "png"])
 
 if uploaded_image is not None:
-    st.image(uploaded_image, caption="الصورة المرفوعة بنجاح", use_container_width=True)
-    st.info("💡 بما أنك رفعت الصورة للمباراة (Lobos UPNFM vs Motagua)، تم سحب الأودز تلقائياً للتحليل التجريبي:")
+    st.image(uploaded_image, caption="لقطة الشاشة الحالية", use_container_width=True)
 
-# خانات الإدخال (مملوءة افتراضياً ببيانات الصورة التي أرسلتها لتوفير الوقت)
+# البيانات المستخرجة من صورتك الأخيرة (CD Guabira vs San Antonio B)
 with st.form("vision_form"):
-    st.subheader("📝 البيانات المستخرجة من الصورة")
+    st.subheader("📝 بيانات المباراة من الصورة")
     col1, col2 = st.columns(2)
     with col1:
-        home_team = st.text_input("الفريق المستضيف", "Lobos UPNFM")
-        home_att = st.number_input("قوة هجوم المستضيف", value=0.90, step=0.05)
-        home_def = st.number_input("قوة دفاع المستضيف", value=1.10, step=0.05)
+        home_team = st.text_input("الفريق المستضيف", "CD Guabira")
+        home_att = st.number_input("قوة هجوم المستضيف", value=1.35, step=0.05)
+        home_def = st.number_input("قوة دفاع المستضيف", value=0.90, step=0.05)
     with col2:
-        away_team = st.text_input("الفريق الضيف", "Motagua")
-        away_att = st.number_input("قوة هجوم الضيف", value=1.40, step=0.05)
-        away_def = st.number_input("قوة دفاع الضيف", value=0.80, step=0.05)
+        away_team = st.text_input("الفريق الضيف", "San Antonio B")
+        away_att = st.number_input("قوة هجوم الضيف", value=1.20, step=0.05)
+        away_def = st.number_input("قوة دفاع الضيف", value=1.00, step=0.05)
         
-    st.subheader("💰 الأودز (Odds) المسحوبة من الصورة")
+    st.subheader("💰 الأودز الظاهرة في الصورة (Tipp)")
     m_col1, m_col2, m_col3 = st.columns(3)
     with m_col1:
-        mkt_h = st.number_input("سعر 1", value=3.40, step=0.01)
+        mkt_h = st.number_input("سعر 1", value=1.65, step=0.01)
     with m_col2:
-        mkt_d = st.number_input("سعر التعادل X", value=3.20, step=0.01)
+        mkt_d = st.number_input("سعر التعادل X", value=3.80, step=0.01)
     with m_col3:
-        mkt_a = st.number_input("سعر 2", value=1.85, step=0.01)
+        mkt_a = st.number_input("سعر 2", value=3.60, step=0.01)
         
-    submitted = st.form_submit_button("🚀 تحليل الصورة والأودز فوراً", use_container_width=True)
+    submitted = st.form_submit_button("🚀 تحليل المباراة الآن", use_container_width=True)
 
 if submitted:
-    res = calculate_match_engine(home_att, away_def, away_att, home_def)
+    res = calculate_match_engine(home_att, def_away, att_away, home_def)
     
     st.markdown("---")
-    st.markdown(f"### 📊 نتائج تحليل صورة: {home_team} vs {away_team}")
+    st.markdown(f"### 📊 نتائج تحليل: {home_team} vs {away_team}")
     st.success(f"xG {home_team}: **{res['xG_Home']:.2f}** | xG {away_team}: **{res['xG_Away']:.2f}**")
     
     edge_h = (res['prob_home'] * mkt_h) - 1

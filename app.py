@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 import math
 
-st.set_page_title("PRO QUANT ENGINE V1.5.4-PRO")
+st.set_page_config(page_title="PRO QUANT ENGINE V1.5.4-PRO", layout="wide")
 st.title("⚽ PRO QUANT ENGINE V1.5.4-PRO")
 st.markdown("---")
 
@@ -29,7 +29,7 @@ with col5:
 
 if st.button("تشغيل التحليل الكمي الصارم"):
     st.markdown("---")
-    st.subheader(" نتائج التحليل الرياضي الاحتمالي:")
+    st.subheader("📊 نتائج التحليل الرياضي الاحتمالي:")
     
     # حساب الاحتمالات الضمنية وإزالة الهامش (De-vig)
     raw_probs = [1/odd_home, 1/odd_draw, 1/odd_away]
